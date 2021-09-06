@@ -1,0 +1,45 @@
+#!/bin/sh
+
+#Keyboard               Set system keyboard
+
+#Network                Set up the network
+
+#Hostname               Set system hostname
+
+#Locale                 set system locale
+
+#Timezone               set system time zone
+
+#RootPassword           set system root password
+
+#UserAccount            set primary user name and password
+
+#Packages               
+
+#BootLoader             set disk to install bootloader
+
+#Partition              Partition disk(s)
+
+#Filesystems            Comfigure filesystems and mount points
+
+#Install                Start installation with saved settings
+
+#Exit                   Exit installation
+
+main="$( dialog --title "Arch-installer" --msgbox "Welcome to the Arch Linux installation." 7 44 \
+    --and-widget --stdout --title "Arch Linux Installation menu" \
+    --menu "Use UP and DOWN keys to nevigate menus. Use TAB to switch brtween buttons and ENTER to select" 0 65 13 \
+    Keyboard "Set system keyboard" \
+    Network "Set up the network" \
+    Hostname "Set system hostname" \
+    Locale "set system locale" \
+    Timezone "set system time zone" \
+    RootPassword "set system root password" \
+    UserAccount "set primary user name and password" \
+    Packages "Configure Packages" \
+    BootLoader "set disk to install bootloader" \
+    Partition "Partition disk(s)" \
+    Filesystems "Comfigure filesystems and mount points" \
+    Install "Start installation with saved settings" \
+    Exit "Exit installation" )"
+
