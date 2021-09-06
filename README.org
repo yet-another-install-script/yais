@@ -1,0 +1,5 @@
+#+TITLE: yet-another-install-script
+
+#+OPTIONS: ^:{}
+
+* YAIS
