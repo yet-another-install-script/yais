@@ -1,45 +1,95 @@
 #!/bin/sh
 
-#Keyboard               Set system keyboard
 
-#Network                Set up the network
+#Menu Variables---------------------------------------
 
-#Hostname               Set system hostname
+Keyboard="Set system keyboard"
 
-#Locale                 set system locale
+Network="Set up the network"
 
-#Timezone               set system time zone
+Hostname="Set system hostname"
 
-#RootPassword           set system root password
+Locale="set system locale"
 
-#UserAccount            set primary user name and password
+Timezone="set system time zone"
 
-#Packages               
+RootPassword="set system root password"
 
-#BootLoader             set disk to install bootloader
+UserAccount="set primary user name and password"
 
-#Partition              Partition disk(s)
+Packages="Configure Packages"
 
-#Filesystems            Comfigure filesystems and mount points
+BootLoader="set up bootloader"
 
-#Install                Start installation with saved settings
+Partition="Partition disk(s)"
 
-#Exit                   Exit installation
+Filesystems="Comfigure filesystems and mount points"
 
-main="$( dialog --title "Arch-installer" --msgbox "Welcome to the Arch Linux installation." 7 44 \
-    --and-widget --stdout --title "Arch Linux Installation menu" \
-    --menu "Use UP and DOWN keys to nevigate menus. Use TAB to switch brtween buttons and ENTER to select" 0 65 13 \
-    Keyboard "Set system keyboard" \
-    Network "Set up the network" \
-    Hostname "Set system hostname" \
-    Locale "set system locale" \
-    Timezone "set system time zone" \
-    RootPassword "set system root password" \
-    UserAccount "set primary user name and password" \
-    Packages "Configure Packages" \
-    BootLoader "set disk to install bootloader" \
-    Partition "Partition disk(s)" \
-    Filesystems "Comfigure filesystems and mount points" \
-    Install "Start installation with saved settings" \
-    Exit "Exit installation" )"
+Install="Start installation with saved settings"
 
+Exit="Exit installation"
+
+total_var=13 #number of menu items
+
+#Layout Variables---------------------------------------
+
+#main
+HIGHT=60
+WIDTH=21
+
+#Welcomebox
+w_hight=45
+w_width=10
+
+#infobox
+info_hight=45
+info_width=10
+
+function WELCOME ()
+{
+    dialog --title "Arch-installer" --msgbox "Welcome to the Arch Linux installation." ${w_width} ${w_hight}
+}
+
+
+function KEYMAP ()
+{
+
+    dialog --title "Arch-installer" --stdout \
+           --menu "Use UP and DOWN keys to nevigate menus. Use TAB to switch brtween buttons and ENTER to select" ${WIDTH} ${HIGHT} $(localectl list-keymaps | wc -l) \
+           $(localectl list-keymaps | tr '\n' '*' | sed "s/*/   - /g")
+}
+
+
+function MAIN () 
+{
+    dialog --stdout --title "Arch Linux Installation menu" \
+    --menu "Use UP and DOWN keys to nevigate menus. Use TAB to switch brtween buttons and ENTER to select" ${WIDTH} ${HIGHT} ${total_var} \
+    Keyboard "${Keyboard}" \
+    Network "${Network}" \
+    Hostname "${Hostname}" \
+    Locale "${Locale}" \
+    Timezone "${Timezone}" \
+    RootPassword "${RootPassword}" \
+    UserAccount "${UserAccount}" \
+    Packages "${Packages}" \
+    BootLoader "${BootLoader}" \
+    Partition "${Partition}" \
+    Filesystems "${Filesystems}" \
+    Install "${Install}" \
+    Exit "${Exit}"
+}
+
+WELCOME
+
+while true
+do
+    main=$(MAIN)
+    if [ ${main} == "Keyboard" ];
+    then
+        keymap=$(KEYMAP)
+        Keyboard=$keymap
+    elif [ ${main} == "Exit" ];
+    then
+        exit 1;
+    fi
+done
