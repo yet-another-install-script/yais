@@ -27,7 +27,7 @@ BootLoader="set up bootloader"
 
 Partition="Partition disk(s)"
 
-Filesystems="Comfigure filesystems and mount points"
+Filesystems="Configure filesystems and mount points"
 
 Install="Start installation with saved settings"
 
@@ -60,6 +60,13 @@ i_width=45
 #default-item for menu
 default_item="Keyboard"
 
+#extra packages
+extra_packages=base-devel
+
+#partition array
+declare -A partition_main
+
+
 function WELCOME ()
 {
     dialog --title "Arch-installer" --msgbox "Welcome to the Arch Linux installation." ${w_hight} ${w_width}
@@ -67,42 +74,43 @@ function WELCOME ()
 
 function KEYMAP ()
 {
-
-    KEY="$(dialog --title "Arch-installer" --stdout \
+    KEY="$(dialog --cancel-label "Back" --ok-label "Select" --title "Arch-installer" --stdout \
            --menu "Use UP and DOWN keys to nevigate menus. Use TAB to switch brtween buttons and ENTER to select" ${WIDTH} ${HIGHT} $(localectl list-keymaps | wc -l) \
            $(localectl list-keymaps | sed  -e ':a;N;$!ba;s/\n/ - /g' ) - )"
 
-    [ -z ${KEY} ] && echo "*ERROR" || echo "${KEY}"
+    [ -z ${KEY} ] || Keyboard="${KEY}"
+    [ -z ${KEY} ] || default_item="Network"
 }
 
 function NETWORK ()
 {
-    if  ping -q -c 1 -W 2 google.com &>/dev/null;
+    if  ping -q -c 1 -W 2 archlinux.org &>/dev/null;
     then
             Network="Connected"
     else
-            Network="*ERROR disconnected"
+            Network="*Error disconnected"
     fi
 }
 
-function HOSTNAME ()
+function HOST_NAME ()
 {
-    HS=$(dialog --stdout --title "Arch-installer" --clear --inputbox "Enter your hostname:" ${i_hight} ${i_width})
-    [ -z ${HS} ] && echo "*ERROR" || echo ${HS}
+    HS=$(dialog --no-cancel --stdout --title "Arch-installer" --clear --inputbox "Enter your hostname:" ${i_hight} ${i_width})
+    [ -z ${HS} ] || Hostname="${HS}"
+    [ -z ${HS} ] || default_item="Locale"
 }
 
 function LOCALE ()
 {
-    LC="$(dialog --stdout --title "Arch-installer" \
+    LC="$(dialog --cancel-label "Back" --ok-label "Select" --stdout --title "Arch-installer" \
     --menu "Use UP and DOWN keys to nevigate menus. Use TAB to switch brtween buttons and ENTER to select" ${WIDTH} ${HIGHT} 488 \
     $(cat /etc/locale.gen | tail -n 488 | cut -d ' ' -f1 | sed 's/#//g' | sed  -e ':a;N;$!ba;s/\n/ - /g') -)"
-    [ -z ${LC} ] && echo "*ERROR" || echo ${LC}
-    
+    [ -z ${LC} ] || Locale="${LC}"
+    [ -z ${LC} ] || default_item="Timezone"
 }
 
 function TIMEZONE ()
 {
-    TZ_1="$(dialog --stdout --title "Arch-installer" \
+    TZ_1="$(dialog --stdout --ok-label "Select" --cancel-label "Back" --title "Arch-installer" \
     --menu "Use UP and DOWN keys to nevigate menus. Use TAB to switch brtween buttons and ENTER to select" ${WIDTH} ${HIGHT} 10 \
     Africa "" \
     America "" \
@@ -117,25 +125,40 @@ function TIMEZONE ()
 
     if [ -z ${TZ_1} ];
     then
-        echo "*ERROR"
+        default_item="Timezone"
     else
-        TZ_2="$(dialog --stdout --title "Arch-installer" \
+        TZ_2="$(dialog --stdout --ok-label "Select" --cancel-label "Back" --title "Arch-installer" \
         --menu "Use UP and DOWN keys to nevigate menus. Use TAB to switch brtween buttons and ENTER to select" ${WIDTH} ${HIGHT} $(timedatectl list-timezones | grep ${TZ_1} | wc -l) \
         $(timedatectl list-timezones | grep ${TZ_1} | cut -d '/' -f2 | sed  -e ':a;N;$!ba;s/\n/ - /g') - )"
-        [ -z ${TZ_2} ] && echo "*ERROR" || echo "${TZ_1}/${TZ_2}"
+        [ -z ${TZ_2} ] || Timezone="${TZ_1}/${TZ_2}"
+        [ -z ${TZ_2} ] || default_item="RootPassword"
     fi
 }
 
 function ROOTPASSWORD ()
 {
-    pass="$(dialog --stdout --title "Arch-installer" --insecure --passwordbox "Enter your root password:" ${i_hight} ${i_width} \
-        --and-widget --title "Arch-installer" --insecure --passwordbox "Retype your root password:" ${i_hight} ${i_width} )"
-        [ "$(echo ${pass} | cut -d ' ' -f1)" == "$(echo ${pass} | cut -d ' ' -f2)" ] && echo "$(echo ${pass} | cut -d ' ' -f2)" || echo "*ERROR"
+    while true
+    do
+        pass_1="$(dialog --no-cancel --stdout --title "Arch-installer" --insecure --passwordbox "Enter password for root user:" ${i_hight} ${i_width} \
+            --and-widget --no-cancel --title "Arch-installer" --insecure --passwordbox "Retype your password:" ${i_hight} ${i_width} )"
+        
+        [ -z "$(echo ${pass_1} | cut -d ' ' -f1)" ] && dialog --title "Arch-installer" --msgbox "Error, Retype your password" ${i_hight} ${i_width} && continue
+        
+        if [ "$(echo ${pass_1} | cut -d ' ' -f1)" == "$(echo ${pass_1} | cut -d ' ' -f2)" ];
+        then
+            rootpass_main="$(echo ${pass_1} | cut -d ' ' -f1)"
+            RootPassword="********" 
+            default_item="UserAccount"
+            break
+        else
+            dialog --title "Arch-installer" --msgbox "Error, Retype your password" ${i_hight} ${i_width}
+        fi
+    done
 }
 
 function USER_GROUP ()
 {
-    pac="$(dialog --stdout --checklist "Select:" ${WIDTH} ${HIGHT} 5 \
+    pac="$(dialog --stdout --ok-label "Select" --cancel-label "Use deafult" --checklist "Select:" ${WIDTH} ${HIGHT} 5 \
         "root" 1 off \
         "wheel" 2 on \
         "audio" 3 on \
@@ -146,7 +169,7 @@ function USER_GROUP ()
     then 
         user_group="wheel, audio, video"
     else
-        user_group="$( echo -e "${pac}" | tr ' ' ',')"
+        user_group="$( echo -e "${pac}" | sed 's/ /, /g')"
     fi
 }
 
@@ -154,17 +177,19 @@ function USERPASSWORD ()
 {
     while true
     do
-        pass="$(dialog --stdout --title "Arch-installer" --insecure --passwordbox "Enter password for ${1}:" ${i_hight} ${i_width} \
-            --and-widget --title "Arch-installer" --insecure --passwordbox "Retype your password:" ${i_hight} ${i_width} )"
+        pass="$(dialog --no-cancel --stdout --title "Arch-installer" --insecure --passwordbox "Enter password for ${1}:" ${i_hight} ${i_width} \
+            --and-widget --no-cancel --title "Arch-installer" --insecure --passwordbox "Retype your password:" ${i_hight} ${i_width} )"
         
-        [ -z "${pass}" ] && dialog --title "Arch-installer" --timeout 1 --msgbox "ERROR, Retype your password" ${i_hight} ${i_width} && continue
+        [ -z "$(echo ${pass} | cut -d ' ' -f1)" ] && dialog --title "Arch-installer" --msgbox "Error, Retype your password" ${i_hight} ${i_width} && continue
+        [ -z "$(echo ${pass} | cut -d ' ' -f2)" ] && dialog --title "Arch-installer" --msgbox "Error, Retype your password" ${i_hight} ${i_width} && continue
         
         if [ "$(echo ${pass} | cut -d ' ' -f1)" == "$(echo ${pass} | cut -d ' ' -f2)" ];
         then
-            userpass_main="$(echo ${pass} | cut -d ' ' -f1))"
+            userpass_main="$(echo ${pass} | cut -d ' ' -f1)"
+            USER_GROUP
             break
         else
-            dialog --title "Arch-installer" --timeout 1 --msgbox "ERROR, Retype your password" ${i_hight} ${i_width}
+            dialog --title "Arch-installer" --msgbox "Error, Retype your password" ${i_hight} ${i_width}
         fi
     done
 }
@@ -173,16 +198,15 @@ function USERACCOUNT ()
 {
     while true
     do
-        UR=$(dialog --stdout --title "Arch-installer" --clear --inputbox "Enter your primary username:" ${i_hight} ${i_width})
+        UR=$(dialog --stdout --no-cancel --title "Arch-installer" --clear --inputbox "Enter your primary username:" ${i_hight} ${i_width})
         if [ -z ${UR} ];
         then
-            dialog --title "Arch-installer" --timeout 1 --msgbox "Enter valid user name" ${i_hight} ${i_width}
+            dialog --title "Arch-installer" --msgbox "Enter valid user name" ${i_hight} ${i_width}
             continue
         else
 
             usename_main="${UR}"
             USERPASSWORD ${UR}
-            USER_GROUP
             break
         fi
     done
@@ -190,7 +214,7 @@ function USERACCOUNT ()
 
 function PACKAGES ()
 {
-    pac="$(dialog --stdout --checklist "Select:" ${WIDTH} ${HIGHT} 11 \
+    pac="$(dialog --stdout --ok-label "Select" --cancel-label "Back" --checklist "Select:" ${WIDTH} ${HIGHT} 11 \
   "base-devel" 1 o \
   "networkmanager" 2 on \
   "neofetch" 3 off \
@@ -203,19 +227,102 @@ function PACKAGES ()
   "mtools" 10 on \
   "acpi" 11 on \
   "wpa_supplicant" 12 on )"
+    [ -z "${pac}" ] || extra_packages="${pac}"
 }
 
 function BOOTLOADER ()
 {
-    BOOT="$(dialog --stdout --title "Arch Linux Installation menu" \
+    BOOT="$(dialog --no-cancel --ok-label "Select" --stdout --title "Arch Linux Installation menu" \
         --menu "Use UP and DOWN keys to nevigate menus. Use TAB to switch brtween buttons and ENTER to select" 0 ${HIGHT} 2 grub "grub bootloader" systemd-boot "systemd-boot UEFI boot manager")"
-    [ -z ${BOOT} ] && echo "*ERROR" || echo "${BOOT}"    
+    [ -z ${BOOT} ] || BootLoader="${BOOT}"    
+}
+
+function PARTITION ()
+{
+    ind="$(dialog --stdout --title "Arch-installer" \
+        --menu "Use UP and DOWN keys to nevigate menus. Use TAB to switch brtween buttons and ENTER to select" 0 ${HIGHT} 0 cfdisk "" fdisk "")"
+
+    if [ -z ${ind} ];
+    then
+        default_item="Partition"
+    else
+        ind_2="$(dialog --stdout --title "Arch-installer" \
+            --menu "Use UP and DOWN keys to nevigate menus. Use TAB to switch brtween buttons and ENTER to select" 0 ${HIGHT} 0 $(lsblk --paths --nodeps --noheadings --output=NAME,SIZE) )"
+        
+        [ -z ${ind_2} ] || default_item="Filesystems"
+        [ -z ${ind_2} ] && default_item="Partition" || ${ind} /dev/${ind_2}
+    fi
+}
+
+function MOUNTPOINT ()
+{
+  
+    mountpoint="$(dialog --cancel-label "Back" --ok-label "Select" --stdout --title "Arch-installer" \
+        --menu "Use UP and DOWN keys to nevigate menus. Use TAB to switch brtween buttons and ENTER to select" 0 ${HIGHT} 0 / "root" /boot "boot" /boot/efi "boot-efi" /home "home" )"
+    [ -z "${mountpoint}" ] && echo "empty" || echo "${mountpoint}"
+}
+
+function PTTYPE ()
+{
+    type="$(dialog --cancel-label "Back" --ok-label "Select" --stdout --title "Arch-installer" \
+        --menu "Use UP and DOWN keys to nevigate menus. Use TAB to switch brtween buttons and ENTER to select" 0 ${HIGHT} 0 ext4 "Linux ext4" vfat "FAT32" btrfs "Oracle's Btrfs" swap "Linux swap" )"
+    if [ -z "${type}" ];
+    then
+        echo "empty"
+    elif [ "${type}" == "swap" ];
+    then
+        echo "swap"
+    else
+        temp="$(MOUNTPOINT)"
+        [ "${temp}" == "empty" ] && echo "empty" || echo "${type}:${temp}"
+    fi
+}
+
+function FILESYSTEMS ()
+{
+    while true
+    do        
+        part="$(dialog --cancel-label "Done" --ok-label "Select" --stdout --title "Arch-installer" \
+            --menu "Use UP and DOWN keys to nevigate menus. Use TAB to switch brtween buttons and ENTER to select" 0 ${HIGHT} 0 $(lsblk --pairs --noheadings --paths --output=NAME,SIZE,FSTYPE,TYPE | awk -F '"' '/part/ {print $2 $3 $4 ":TYPE=" $6}') )"
+        if [ -z "${part}" ];
+        then
+            break
+        else
+            ptype="$(PTTYPE)"
+            if [ "${ptype}" == "empty" ];
+            then
+                dialog --title "Arch-installer" --msgbox "  ${part} will remain unchanged          " 10 ${HIGHT}
+            elif [ "${ptype}" == "swap" ]
+            then
+                dialog --title "Arch-installer" --msgbox "  ${part} will be used as swap" 10 ${HIGHT}
+                partition_main[${part}]="${ptype}"
+            else
+                dialog --title "Arch-installer" --msgbox "  ${part} will be formatted as $(echo ${ptype} | awk -F ":" '{print $1}') and mounted on the $(echo ${ptype} | awk -F ":" '{print $2}')         " 10 ${HIGHT}
+                partition_main[${part}]="${ptype}"
+            fi
+        fi
+    done
+}
+
+function SHOW_SETTINGS ()
+{
+    echo "SHOW_SETTINGS"
+}
+
+function CHECK ()
+{
+    echo "CHECK"
+}
+
+function INSTALLATION ()
+{
+    CHECK
 }
 
 function MAIN () 
 {
-    dialog --stdout --title "Arch Linux Installation menu" \
-    --default-item ${default_item} --menu "Use UP and DOWN keys to nevigate menus. Use TAB to switch brtween buttons and ENTER to select" ${WIDTH} ${HIGHT} ${total_var} \
+    dialog --clear --stdout --title "Arch Linux Installation menu" \
+    --ok-label "Enter" --cancel-label "Help" --default-item ${default_item} --menu "Use UP and DOWN keys to nevigate menus. Use TAB to switch brtween buttons and ENTER to select" ${WIDTH} ${HIGHT} ${total_var} \
     Keyboard "${Keyboard}" \
     Network "${Network}" \
     Hostname "${Hostname}" \
@@ -230,37 +337,33 @@ function MAIN ()
     Install "${Install}" \
     Exit "${Exit}"
 }
+
 NETWORK
+
 WELCOME
+
 while true
 do
     main=$(MAIN)
     
     if [ ${main} == "Keyboard" ];
     then
-        keymap=$(KEYMAP)
-        Keyboard=$keymap
-        default_item="Network"
+        KEYMAP
    elif [ ${main} == "Network" ];
    then
        default_item="Hostname"
    elif [ ${main} == "Hostname" ];
    then
-       Hostname=$(HOSTNAME)
-       default_item="Locale"
+       HOST_NAME
    elif [ ${main} == "Locale" ];
    then
-       Locale=$(LOCALE)
-       default_item="Timezone"
+       LOCALE
    elif [ ${main} == "Timezone" ];
    then
-       Timezone="$(TIMEZONE)"
-       default_item="RootPassword"
+       TIMEZONE
    elif [ ${main} == "RootPassword" ];
    then
-       rootpass_main=$(ROOTPASSWORD)
-       [ -z ${rootpass_main} ] && RootPassword="*ERROR" || RootPassword="********" 
-       default_item="UserAccount"
+       ROOTPASSWORD
    elif [ ${main} == "UserAccount" ];
    then
        USERACCOUNT
@@ -271,19 +374,49 @@ do
        default_item="BootLoader"
    elif [ ${main} == "BootLoader" ];
    then
-       BootLoader=$(BOOTLOADER)
+       BOOTLOADER
        default_item="Partition"
    elif [ ${main} == "Partition" ];
    then
-       default_item="Filesystems"
+       PARTITION
    elif [ ${main} == "Filesystems" ];
    then
+       FILESYSTEMS
        default_item="Install"
    elif [ ${main} == "Install" ];
    then
+       INSTALLATION
        default_item="Exit"
     elif [ ${main} == "Exit" ];
     then
-        exit 1;
+        dialog --title "Arch-installer" --default-button "no" --no-label "I don't" --yes-label "I do" \
+            --yesno "Are you sure you want to abort the installation." ${i_hight} ${i_width}
+        
+        [ "${?}" == "1" ] || break
+        
+    elif [ -z "${main}" ];
+    then
+        SHOW_SETTINGS
     fi
+
 done
+
+echo -en "\\n\\n\\n"
+
+echo "keymap  =  ${Keyboard}"
+echo "Hostname  =  ${Hostname}"
+echo "Locale  =  ${Locale}"
+echo "Timezone  =  ${Timezone}"
+echo "rootpass_main  =  ${rootpass_main}"
+echo "usename_main  =  ${usename_main}"
+echo "userpass_main  =  ${userpass_main}"
+echo "user_group  =  ${user_group}"
+echo "BootLoader  =  ${BootLoader}"
+echo "packages  =  ${extra_packages}"
+echo "number of partition  =  ${#partition_main[*]}"
+
+for i in ${!partition_main[*]}
+    do
+        echo " $i  :  ${partition_main[$i]}"
+    done
+
