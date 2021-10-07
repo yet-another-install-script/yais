@@ -4,4 +4,61 @@
 
 * YAIS
 
-[[./assets/screenshot/ss.png]]
+** welcome
+[[./assets/screenshot/Welcome/ss.png]]
+
+** Menu
+
+[[./assets/screenshot/Menu/ss.png]]
+
+** Keyboard
+
+** Hostname
+
+[[./assets/screenshot/Hostname/ss.png]]
+
+** Locale
+
+[[./assets/screenshot/Locale/ss.png]]
+
+** Timezone
+
+[[./assets/screenshot/Timezone/ss.png]]
+
+** RootPassword
+
+[[./assets/screenshot/RootPassword/ss.png]]
+
+** UserAccount
+
+[[./assets/screenshot/UserAccount/ss.png]]
+
+[[./assets/screenshot/UserAccount/ss0.png]]
+
+[[./assets/screenshot/UserAccount/ss1.png]]
+
+** Packages
+
+[[./assets/screenshot/Packages/ss.png]]
+
+** BootLoader
+
+[[./assets/screenshot/BootLoader/ss.png]]
+
+** Partition
+
+[[./assets/screenshot/Partition/ss.png]]
+
+[[./assets/screenshot/Partition/ss0.png]]
+
+[[./assets/screenshot/Partition/ss1.png]]
+
+** Filesystems
+
+[[./assets/screenshot/Filesystems/ss.png]]
+
+[[./assets/screenshot/Filesystems/ss0.png]]
+
+[[./assets/screenshot/Filesystems/ss1.png]]
+
+** Install
