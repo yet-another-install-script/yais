@@ -299,6 +299,7 @@ function PTTYPE ()
 
 function FILESYSTEMS ()
 {
+    List_partition="$(lsblk --pairs --noheadings --paths --output=NAME,SIZE,FSTYPE,TYPE | awk -F '"' '/part/ {print $2 " " $3 $4 ":TYPE=" $6}')"
     while true
     do
         part="$(dialog --colors --cr-wrap --clear --cancel-label "Done" --ok-label "Select" --help-button --help-label "Reset" --stdout --title "Arch-installer" \
@@ -537,6 +538,8 @@ function MAIN ()
     Install "${VAR[Install]}" \
     Exit "${VAR[Exit]}"
 }
+
+setfont ter-726b.psf.gz &> /dev/null
 
 LIST_PARTITION
 
