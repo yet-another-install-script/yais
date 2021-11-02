@@ -452,7 +452,7 @@ function FORMAT_AND_MOUNT_PARTITION ()
                 mkdir -p /mnt/boot/efi
                 mkfs.fat -F32 ${i}
                 mount ${i} /mnt/boot/efi
-           fii
+           fi
        done
 ######################################
    for i in ${!part_main[*]}
