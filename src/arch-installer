@@ -34,6 +34,10 @@ i_width=45
 List_partition="0 0"
 Mount_points="0 0"
 
+# {{{ BSPWM SETUP PACKAGES
+BSPWMPKG=" xorg bspwm sxhkd picom feh polybar rofi lightdm lightdm-gtk-greeter "
+# }}}
+
 function LIST_PARTITION ()
 {
     List_partition="$(lsblk --pairs --noheadings --paths --output=NAME,SIZE,FSTYPE,TYPE | awk -F '"' '/part/ {print $2 " " $3 $4 ":TYPE=" $6}')"
@@ -72,6 +76,7 @@ VAR=(
     [usename_main]=arch
     [user_group]="wheel, audio, video"
     [Packages]="Configure Packages"
+    [WM]="Chose optional WM"
     [BootLoader]="set up bootloader"
     [Partition]="Partition disk(s)"
     [Filesystems]="Configure filesystems and mount points"
@@ -220,6 +225,14 @@ function USERACCOUNT ()
             break
         fi
     done
+}
+
+function WM () 
+{
+
+    pac="$(dialog --colors --cr-wrap --clear --stdout --ok-label "Select" --cancel-label "Back" --title "\ZbSelect WM\Zn" --checklist "      \ZbUse <Space> key to check/uncheck the items\n\nSelect:" ${WIDTH} ${HIGHT} 15 \
+      "BSPWM" 1 off )"
+[ -z "${pac}" ] || VAR[WM]="${BSPWMPKG}"
 }
 
 function PACKAGES ()
@@ -378,7 +391,8 @@ function CHROOT_FILE ()
     echo "echo \"127.0.0.1       localhost\" >> /etc/hosts"  >> arch_chroot.sh
     echo "echo \"::1             localhost\" >> /etc/hosts"  >> arch_chroot.sh
     echo "echo \"127.0.1.1       ${VAR[Hostname]}.localdomain ${VAR[Hostname]}\" >> /etc/hosts"  >> arch_chroot.sh
-    echo "pacman -S ${VAR[extra_packages]} sudo --noconfirm"  >> arch_chroot.sh
+    echo "pacman -S ${VAR[WM]} sudo --noconfirm"  >> arch_chroot.sh
+    echo "pacman -S ${VAR[extra_packages]} --needed sudo --noconfirm"  >> arch_chroot.sh
     echo "systemctl enable NetworkManager"  >> arch_chroot.sh
     echo "systemctl enable wpa_supplicant"  >> arch_chroot.sh
     echo "echo root:\"${VAR[rootpass_main]}\" | chpasswd"  >> arch_chroot.sh
@@ -532,6 +546,7 @@ function MAIN ()
     RootPassword "${VAR[RootPassword]}" \
     UserAccount "${VAR[UserAccount]}" \
     Packages "${VAR[Packages]}" \
+    WM "${VAR[WM]}" \
     BootLoader "${VAR[BootLoader]}" \
     Partition "${VAR[Partition]}" \
     Filesystems "${VAR[Filesystems]}" \
@@ -578,6 +593,10 @@ do
    elif [ ${main} == "Packages" ];
    then
        PACKAGES
+       VAR[default_item]="WM"
+   elif [ ${main} == "WM" ];
+   then
+       WM
        VAR[default_item]="BootLoader"
    elif [ ${main} == "BootLoader" ];
    then
