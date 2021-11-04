@@ -1,6 +1,6 @@
 #!/bin/sh
 
-sudo pacman -S --noconfirm --needed dialog
+pacman -S --noconfirm --needed dialog
 
 #Menu Variables---------------------------------------
 
